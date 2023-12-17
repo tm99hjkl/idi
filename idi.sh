@@ -36,7 +36,7 @@ Usage:
     $CMD [search]
         Search for snippets in the $PREFIX using fzf. 
         Pressing Enter in the preview window copies the contents (full path if not text) to the clipboard.
-    $CMD add <filename>
+    $CMD add <filename>...
         Add a snippet <filename>. The extension of <filename> is used as the directory name.
     $CMD help
         Show this text.
@@ -53,16 +53,19 @@ cmd() {
 
 cmd_add() {
     [[ "$#" -ne 0 ]] || die "Usage: $CMD add <filename>"
-    [[ -e "$1" ]] || die "Error: $1 does not exists."
 
-    local idiom_file=$(basename $1)
-    local ext="${idiom_file##*\.}"
-    local target_dir="$PREFIX/$ext"
+    for file in "$@"; do
+        [[ -e "$file" ]] || die "Error: $file does not exists."
 
-    [[ -d "$target_dir" ]] || (yesno "mkdir $target_dir?" && mkdir -p "$target_dir")
-    [[ -e "$target_dir/$idiom_file" ]] && yesno "update $idiom_file?"
+        local idiom_file=$(basename $file)
+        local ext="${idiom_file##*\.}"
+        local target_dir="$PREFIX/$ext"
 
-    cp "$idiom_file" "$PREFIX/$ext/$idiom_file"   
+        [[ -d "$target_dir" ]] || (yesno "mkdir $target_dir?" && mkdir -p "$target_dir")
+        [[ -e "$target_dir/$idiom_file" ]] && yesno "update $idiom_file?"
+
+        cp "$idiom_file" "$PREFIX/$ext/$idiom_file" 
+    done
 }
 
 
