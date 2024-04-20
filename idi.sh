@@ -13,6 +13,7 @@ FZF_OPTS=(
     --preview='bat -p {} --color always --theme=Nord'
     --bind="$(IFS=, eval 'echo "${FZF_BIND_COMMANDS[*]}"')" # one-line IFS trick
 )
+EDITOR="hx" # can be vi, vim, emacs, etc...
 
 
 ## utils
@@ -38,6 +39,8 @@ Usage:
         Pressing Enter in the preview window copies the contents (full path if not text) to the clipboard.
     $CMD add <filename>...
         Add a snippet <filename>. The extension of <filename> is used as the directory name.
+    $CMD new [<filename>...]
+        Create a new snippet (or new snippets).
     $CMD help
         Show this text.
 EOF
@@ -64,8 +67,23 @@ cmd_add() {
         [[ -d "$target_dir" ]] || (yesno "mkdir $target_dir?" && mkdir -p "$target_dir")
         [[ -e "$target_dir/$idiom_file" ]] && yesno "update $idiom_file?"
 
-        cp "$idiom_file" "$PREFIX/$ext/$idiom_file" 
+        mv "$file" "$PREFIX/$ext/$idiom_file"
     done
+}
+
+cmd_new() {
+    local tmp_dir=`mktemp -d`
+
+    pushd $tmp_dir >/dev/null
+    hx "$@"
+    popd >/dev/null
+
+    for idiom_file in `ls $tmp_dir`; do
+        idiom_files+=($tmp_dir/$idiom_file)
+    done
+
+    cmd_add "${idiom_files[@]}"
+    rmdir $tmp_dir
 }
 
 
@@ -73,6 +91,7 @@ cmd_add() {
 case "$1" in
     help|--help) shift; cmd_help "$@" ;;
     add)         shift; cmd_add "$@" ;;
+    new)         shift; cmd_new "$@" ;;
     *)           cmd "$@" ;;
 esac
 
