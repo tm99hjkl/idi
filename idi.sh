@@ -37,10 +37,12 @@ Usage:
     $CMD [search]
         Search for snippets in the $PREFIX using fzf. 
         Pressing Enter in the preview window copies the contents (full path if not text) to the clipboard.
-    $CMD add <filename>...
+    $CMD add [<filename> ..]
         Add a snippet <filename>. The extension of <filename> is used as the directory name.
-    $CMD new [<filename>...]
+    $CMD new [<filename> ..]
         Create a new snippet (or new snippets).
+    $CMD edit [<filename> ..]
+        Edit an existing snippet (or snippets).
     $CMD help
         Show this text.
 EOF
@@ -67,7 +69,7 @@ cmd_add() {
         [[ -d "$target_dir" ]] || (yesno "mkdir $target_dir?" && mkdir -p "$target_dir")
         [[ -e "$target_dir/$idiom_file" ]] && yesno "update $idiom_file?"
 
-        mv "$file" "$PREFIX/$ext/$idiom_file"
+        mv "$file" "$target_dir/$idiom_file"
     done
 }
 
@@ -79,12 +81,27 @@ cmd_new() {
     popd >/dev/null
 
     for idiom_file in `ls $tmp_dir`; do
-        idiom_files+=($tmp_dir/$idiom_file)
+        tmp_idiom_files+=($tmp_dir/$idiom_file)
     done
 
-    [[ -z "${idiom_files[@]}" ]] || cmd_add "${idiom_files[@]}"
+    [[ -z "${tmp_idiom_files[@]}" ]] || cmd_add "${tmp_idiom_files[@]}"
 
     rmdir $tmp_dir
+}
+
+cmd_edit() {
+    [[ "$#" -ne 0 ]] || die "Usage: $CMD edit <filename>"
+
+    for idiom_file in "$@"; do
+        local ext="${idiom_file##*\.}"
+        local full_path="$PREFIX/$ext/$idiom_file"
+
+        [[ -e "$full_path" ]] || die "Error: $full_path does not exists."
+
+        full_paths+=($full_path)
+    done
+
+    $EDITOR "${full_paths[@]}"
 }
 
 
@@ -93,6 +110,7 @@ case "$1" in
     help|--help) shift; cmd_help "$@" ;;
     add)         shift; cmd_add "$@" ;;
     new)         shift; cmd_new "$@" ;;
+    edit)        shift; cmd_edit "$@" ;;
     *)           cmd "$@" ;;
 esac
 
