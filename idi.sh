@@ -75,14 +75,15 @@ cmd_new() {
     local tmp_dir=`mktemp -d`
 
     pushd $tmp_dir >/dev/null
-    hx "$@"
+    $EDITOR "$@"
     popd >/dev/null
 
     for idiom_file in `ls $tmp_dir`; do
         idiom_files+=($tmp_dir/$idiom_file)
     done
 
-    cmd_add "${idiom_files[@]}"
+    [[ -z "${idiom_files[@]}" ]] || cmd_add "${idiom_files[@]}"
+
     rmdir $tmp_dir
 }
 
